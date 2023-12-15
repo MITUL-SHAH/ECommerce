@@ -795,13 +795,24 @@ router.post('/checkout', async (req, res)=>
                 let shipment;
 
                 shipment = await client.Shipment.create({
+                    // to_address: {
+                    //     name: userDetails.dataValues.name,
+                    //     street1: endUserDetails.address_line1,
+                    //     street2: endUserDetails.address_line2,
+                    //     city: endUserDetails.address_city,
+                    //     state: endUserDetails.address_state_code,
+                    //     zip: endUserDetails.address_zipcode,
+                    //     country: 'US',
+                    //     email: userDetails.emailId,
+                    //     phone: endUserDetails.phone_nr,
+                    // },
                     to_address: {
                         name: userDetails.dataValues.name,
-                        street1: endUserDetails.address_line1,
-                        street2: endUserDetails.address_line2,
-                        city: endUserDetails.address_city,
-                        state: endUserDetails.address_state_code,
-                        zip: endUserDetails.address_zipcode,
+                        street1: res.cookie.address1,
+                        street2: res.cookie.address2,
+                        city: res.cookie.address3,
+                        state: res.cookie.address4,
+                        zip: res.cookie.address5,
                         country: 'US',
                         email: userDetails.emailId,
                         phone: endUserDetails.phone_nr,
@@ -829,7 +840,7 @@ router.post('/checkout', async (req, res)=>
 
             const tracker = await (async () => {
                 const tracker = await client.Tracker.create({
-                    tracking_code: 'EZ1000000001',
+                    tracking_code: 'EZ2000000002',
                     carrier: 'USPS',
                 });
                 console.log(tracker);

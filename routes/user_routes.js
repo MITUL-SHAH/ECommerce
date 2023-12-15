@@ -725,11 +725,8 @@ router.get("/get-purchase-history", async (req, res) => {
 		const userId = payload.userId;
 
 		var [orderDetails, metadata] = await db.sequelize.query("Select `purchase`.`purchaseId`, `order_detail`.`orderId`, `item_listing`.`listingId`, `ref_catalog`.`name`, `purchase`.`purchase_date`, `purchase`.`total_price`, `purchase`.`paymentId`, `order_detail`.`shipmentId`, `order_detail`.`return_shipment`, `order_detail`.`trackingId`, `order_detail`.`trackingUrl`, `order_detail`.`quantity`, `order_detail`.`total_cost_of_item`, `order_detail`.`order_status` from `order_detail` " +
-																				"INNER JOIN `purchase` ON `order_detail`.`purchaseId` = `purchase`.`purchaseId` " +
-																				"INNER JOIN `item_listing` ON `order_detail`.`listingId` = `item_listing`.`listingId`" +
-																				"INNER JOIN `ref_catalog` ON `ref_catalog`.`itemId` = `item_listing`.`itemId`" +
-																				"where `purchase`.`userId` = " + userId + ";");
-
+                                                                "INNER JOIN `purchase` ON `order_detail`.`purchaseId` = `purchase`.`purchaseId` INNER JOIN `item_listing` ON `order_detail`.`listingId` = `item_listing`.`listingId` INNER JOIN `ref_catalog` ON `ref_catalog`.`itemId` = `item_listing`.`itemId`" +
+                                                                "where `purchase`.`userId` = " + userId + ";");
 
 		// Create a hashmap to store arrays with purchaseId as key
 		var purchaseHashMap = {};
@@ -737,20 +734,11 @@ router.get("/get-purchase-history", async (req, res) => {
 		orderDetails.forEach((order) => {
 			// Extract relevant data from the order object
 			const {
-				orderId,
-				purchaseId,
-				listingId,
-				name,
-				purchase_date,
-				total_price,
-				paymentId,
-				shipmentId,
-				trackingId,
-				trackingUrl,
-				return_shipment,
-				quantity,
-				total_cost_of_item,
-				order_status
+				orderId,			purchaseId,				listingId,
+				name,				purchase_date,			total_price,
+				paymentId,			shipmentId,				trackingId,
+				trackingUrl,		return_shipment,		quantity,
+				total_cost_of_item,	order_status
 			} = order;
 
 			// Check if the purchaseId already exists in the hashmap
@@ -770,15 +758,9 @@ router.get("/get-purchase-history", async (req, res) => {
 
 			// Push the order details to the array corresponding to the purchaseId
 			purchaseHashMap[purchaseId].orderDetails.push({
-				orderId,
-				listingId,
-				name,
-				shipmentId,
-				trackingId,
-				trackingUrl,
-				return_shipment,
-				quantity,
-				total_cost_of_item,
+				orderId,			listingId,			name,
+				shipmentId,			trackingId,			trackingUrl,
+				return_shipment,	quantity,			total_cost_of_item,
 				order_status
 			});
 
@@ -797,77 +779,7 @@ router.get("/get-purchase-history", async (req, res) => {
 		// Output the hashmap
 		console.log(purchaseHashMap);
 
-
 		res.render("purchase_history", { user: userDetails, order: orderDetails, purchaseMap: purchaseHashMap });
-	} else {
-		res.redirect("login");
-	}
-});
-
-router.get("/view-order", async (req, res) => {
-	if (!UserUtil.authenticateToken(req.cookies.accessToken)) {
-		// If not authenticated, send a 401 Unauthorized response
-		return res.status(401).send('Authentication failed');
-	}
-
-	const payload = UserUtil.retrieveTokenPayload(req.cookies.accessToken);
-
-
-
-	const EASYPOST_API_KEY = 'EZTKf21d82fc6abc492ca6f36522677d267aLtEijfmNnjsHlbQLWWYG4w';
-	const client = new EasyPostClient(EASYPOST_API_KEY);
-
-	if (payload.emailId) {
-		const emailId = payload.emailId;
-		var userDetails = await db.User.findOne({where: {emailId}});
-		const userId = userDetails.dataValues.userid;
-
-		let orderId = req.query["orderId"];
-
-		var [orderDetails, metadata] = await db.sequelize.query("Select `purchase`.`purchaseId`, `order_detail`.`orderId`, `item_listing`.`listingId`, `ref_catalog`.`name`, `purchase`.`purchase_date`, `purchase`.`total_price`, `purchase`.`paymentId`, `order_detail`.`shipmentId`,  `order_detail`.`trackingId`, `order_detail`.`quantity`, `order_detail`.`total_cost_of_item`, `order_detail`.`order_status` from `order_detail` " +
-																"INNER JOIN `purchase` ON `order_detail`.`purchaseId` = `purchase`.`purchaseId` " +
-																"INNER JOIN `item_listing` ON `order_detail`.`listingId` = `item_listing`.`listingId`" +
-																"INNER JOIN `ref_catalog` ON `ref_catalog`.`itemId` = `item_listing`.`itemId`" +
-																"where `purchase`.`userId` = " + userId + " and `order_detail`.`orderId` = " + orderId + ";");
-
-		let order;
-		if (orderDetails.length > 0) {
-			// Take the first element from the array
-			const firstOrder = orderDetails[0];
-
-			let trackerDetails;
-			await (async () => {
-				const tracker = await client.Tracker.retrieve(firstOrder.trackingId);
-				trackerDetails = tracker;
-				console.log(tracker);
-			})();
-
-
-
-			// Create an object using the properties of the first element
-			const orderObject = {
-				purchaseId: firstOrder.purchaseId,
-				orderId: firstOrder.orderId,
-				listingId: firstOrder.listingId,
-				name: firstOrder.name,
-				purchase_date: firstOrder.purchase_date,
-				total_price: firstOrder.total_price,
-				paymentId: firstOrder.paymentId,
-				shipmentId: firstOrder.shipmentId,
-				trackingId: firstOrder.trackingId,
-				trackerUrl: trackerDetails.public_url,
-				quantity: firstOrder.quantity,
-				total_cost_of_item: firstOrder.total_cost_of_item,
-				order_status: firstOrder.order_status
-			};
-
-			// Now, 'orderObject' is the object created from the first element
-			// console.log(orderObject);
-			order = orderObject;
-		} else {
-			console.log("orderDetails array is empty");
-		}
-		res.render("order_details", {order : order});
 	} else {
 		res.redirect("login");
 	}
@@ -922,34 +834,6 @@ router.get("/return-order", async (req, res) => {
     } else {
         res.redirect("login");
     }
-});
-
-router.post("/cancel-return", async (req, res) => {
-	if (!UserUtil.authenticateToken(req.cookies.accessToken)) {
-		// If not authenticated, send a 401 Unauthorized response
-		return res.status(401).send('Authentication failed');
-	}
-
-	const payload = UserUtil.retrieveTokenPayload(req.cookies.accessToken);
-
-	if (payload.emailId) {
-		const emailId = payload.emailId;
-		var userDetails = await db.User.findOne({ where: { emailId } });
-		const userId = userDetails.dataValues.userid;
-
-
-		Order.update(
-			{
-				order_status: "not requested"
-			},
-			{
-				where: { listingId: req.body.listingId }
-			}
-		)
-		res.redirect("get-purchase-history");
-	} else {
-		res.redirect("login");
-	}
 });
 
 
